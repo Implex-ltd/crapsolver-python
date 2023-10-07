@@ -1,6 +1,21 @@
 # crapsolver-python
 Python wrapper of crapsolver API
 
+# Usage
+```py
+task, node_addr = wrapper.new_task(
+    task_type=TASK_TYPE.TYPE_ENTERPRISE,
+    domain="balance.vanillagift.com",
+    sitekey="262cdd22-6b90-4d5d-870f-69170f8cc6be",
+    proxy=prox,
+    useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+    oneclick_only=True,
+    invisible=True,
+)
+
+status = wrapper.get_task(node_addr, task["json"]["data"][0]["id"])
+```
+
 # Sitekey list (test purpose)
 ```
 www.habbo.fr
