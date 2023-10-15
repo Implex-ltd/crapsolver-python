@@ -1,0 +1,1 @@
+from .crapsolver import Crapsolver, STATUS, TASK_TYPE
