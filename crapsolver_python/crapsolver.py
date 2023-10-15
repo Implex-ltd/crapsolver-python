@@ -56,7 +56,7 @@ class Crapsolver:
             `domain` (str, required): The domain where the captcha is presented. Defaults to "accounts.hcaptcha.com".\n
             `sitekey` (str, required): The sitekey associated with the captcha. Defaults to "2eaf963b-eeab-4516-9599-9daa18cd5138".\n
             `useragent` (str, optional): The user agent to use when making requests. Defaults to a common user agent string.\n
-            `proxy` (str, optional): The proxy to use for making requests. Defaults to an empty string.\n
+            `proxy` (str, required): The proxy to use for making requests. Defaults to an empty string.\n
             `invisible` (bool, optional): Whether the captcha is invisible. Defaults to False.\n
             `rqdata` (str, optional): Additional request data. Defaults to an empty string.\n
             `text_free_entry` (bool, optional): Whether free text entry is allowed. Defaults to False.\n
