@@ -52,11 +52,11 @@ class Crapsolver:
         Create a new task for solving a captcha.
 
         Args:
-            `task_type` (TASK_TYPE, optional): The type of captcha-solving task. Defaults to TASK_TYPE.TYPE_NORMAL.\n
-            `domain` (str, required): The domain where the captcha is presented. Defaults to "accounts.hcaptcha.com".\n
-            `sitekey` (str, required): The sitekey associated with the captcha. Defaults to "2eaf963b-eeab-4516-9599-9daa18cd5138".\n
+            `task_type` (TASK_TYPE, optional): The type of captcha-solving task.\n
+            `domain` (str, required): The domain where the captcha is presented.\n
+            `sitekey` (str, required): The sitekey associated with the captcha..\n
+            `proxy` (str, required): The proxy to use for making requests.\n
             `useragent` (str, optional): The user agent to use when making requests. Defaults to a common user agent string.\n
-            `proxy` (str, required): The proxy to use for making requests. Defaults to an empty string.\n
             `invisible` (bool, optional): Whether the captcha is invisible. Defaults to False.\n
             `rqdata` (str, optional): Additional request data. Defaults to an empty string.\n
             `text_free_entry` (bool, optional): Whether free text entry is allowed. Defaults to False.\n
@@ -69,6 +69,12 @@ class Crapsolver:
             dict: A dictionary containing the task ID.
             str:  task node server address
         """
+
+        if not proxy.startswith('http'):
+            return {
+                "success": False,
+                "data": "invalid proxy format, http://user:pass@ip:port"
+            }
 
         if task_type != TASK_TYPE.TYPE_ENTERPRISE:
             return {
@@ -117,7 +123,7 @@ class Crapsolver:
         domain: str,
         sitekey: str,
         proxy: str,
-        max_retry: int = 0,
+        max_retry: int = 5,
         wait_time: int = 3000,
         task_type: TASK_TYPE = TASK_TYPE.TYPE_ENTERPRISE,
         useragent: str = __default_ua__,
@@ -180,7 +186,7 @@ class Crapsolver:
                     return resp
 
                 if resp["data"]["status"] == STATUS.STATUS_ERROR:
-                    errs.append(resp)
+                    errs.append(resp["data"]["error"])
                     time.sleep(wait_time / 1000)
                     continue
 
