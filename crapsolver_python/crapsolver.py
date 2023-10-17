@@ -1,12 +1,13 @@
 import time, httpx, itertools
 
-__default_ua__ = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+__default_ua__ = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
 
 __server__ = itertools.cycle(
+    #["http://localhost:80"]
     [
-        "https://node01.nikolahellatrigger.solutions",
-        "https://node02.nikolahellatrigger.solutions",
-        "https://node03.nikolahellatrigger.solutions",
+       "https://node01.nikolahellatrigger.solutions",
+       "https://node02.nikolahellatrigger.solutions",
+       "https://node03.nikolahellatrigger.solutions",
     ]
 )
 
@@ -24,8 +25,8 @@ class TASK_TYPE:
 
 
 class Crapsolver:
-    def __init__(self):
-        self.client = httpx.Client()
+    def __init__(self, api: str):
+        self.client = httpx.Client(headers={"authorization": api})
 
     def check_response(self, data: httpx.Response):
         return {
@@ -39,7 +40,7 @@ class Crapsolver:
         sitekey: str,
         proxy: str,
         task_type: TASK_TYPE = TASK_TYPE.TYPE_ENTERPRISE,
-        useragent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+        useragent: str = __default_ua__,
         invisible: bool = False,
         rqdata: str = "",
         text_free_entry: bool = False,
@@ -70,10 +71,10 @@ class Crapsolver:
             str:  task node server address
         """
 
-        if not proxy.startswith('http'):
+        if not proxy.startswith("http"):
             return {
                 "success": False,
-                "data": "invalid proxy format, http://user:pass@ip:port"
+                "data": "invalid proxy format, http://user:pass@ip:port",
             }
 
         if task_type != TASK_TYPE.TYPE_ENTERPRISE:
@@ -167,10 +168,13 @@ class Crapsolver:
                 oneclick_only=oneclick_only,
             )
 
-            response = data["resp"]["json"]
-            node = data["node"]
+            if data.get("success") == False:
+                return response
 
-            if response.get("success") == False:
+            response = data["resp"]["json"]
+            node = data.get("node")
+
+            if response.get("success") == False or node == None:
                 return response
 
             if turbo:
@@ -188,7 +192,7 @@ class Crapsolver:
                 if resp["data"]["status"] == STATUS.STATUS_ERROR:
                     errs.append(resp["data"]["error"])
                     time.sleep(wait_time / 1000)
-                    continue
+                    break
 
                 if resp["data"]["status"] == STATUS.STATUS_SOLVING:
                     time.sleep(wait_time / 1000)
