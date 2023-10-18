@@ -3,7 +3,10 @@ import time, httpx, itertools
 __default_ua__ = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
 
 __server__ = itertools.cycle(
-    #["http://localhost:80"]
+    #[
+    #    "http://localhost:80",
+    #    "http://localhost:82",
+    #]
     [
        "https://node01.nikolahellatrigger.solutions",
        "https://node02.nikolahellatrigger.solutions",
@@ -198,4 +201,4 @@ class Crapsolver:
                     time.sleep(wait_time / 1000)
 
                 if resp["data"]["status"] == STATUS.STATUS_SOLVED:
-                    return resp["data"]["token"]
+                    return resp["data"]["token"], resp["data"]["user_agent"]
