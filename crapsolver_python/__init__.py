@@ -1,1 +1,1 @@
-from .crapsolver import Crapsolver, STATUS, TASK_TYPE
+from .crapsolver import Crapsolver, STATUS, TaskType, Sitekey
