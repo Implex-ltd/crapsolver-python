@@ -5,6 +5,7 @@ from functools import wraps
 from itertools import cycle
 from time import sleep
 from typing import Any, Dict, Optional, Tuple, Union
+from dataclasses import dataclass
 
 from httpx import Client, Response
 
@@ -34,6 +35,18 @@ class TaskType:
     TYPE_ENTERPRISE = 0
     TYPE_NORMAL = 1  # Disabled
 
+@dataclass
+class Sitekey:
+    """
+    Returned by check_sitekey, returns info about a specific sitekey
+    """
+    min_submit: int
+    max_submit: int
+    domain: str
+    text_only: bool
+    click_only: bool
+    enabled: bool
+    rate: int
 
 def check_response(func):
     """
@@ -59,7 +72,12 @@ def check_response(func):
 
 class Crapsolver:
     def __init__(self, api: str) -> None:
-        self.client = Client(headers={"authorization": api})
+        self.client = Client(
+            headers = {
+                "authorization": api,
+                "user-agent": "crapsolver-py"
+            }
+        )
 
     @check_response
     def new_task(
@@ -131,6 +149,34 @@ class Crapsolver:
         return self.client.get(
             f"{server}/api/task/{task_id}",
         )
+
+    def check_sitekey(self, sitekey: str) -> Union[Sitekey, None]:
+        """
+        Get information about a sitekey
+
+        Args:
+            sitekey (str): The sitekey to check.
+
+        Returns:
+            Union[Sitekey, None]: Sitekey class containing info about the sitekey.
+        """
+        server = next(__server__)
+        response = self.client.get(
+            f"{server}/api/misc/check/{sitekey}"
+        )
+        jsn = response.json()
+        if jsn.get("success"):
+            jsn = jsn["data"]
+            return Sitekey(
+                min_submit = jsn["MinSubmitTime"],
+                max_submit = jsn["MaxSubmitTime"],
+                domain = jsn["Domain"],
+                text_only = jsn["AlwaysText"],
+                click_only = jsn["OneclickOnly"],
+                enabled = jsn["Enabled"],
+                rate = jsn["Rate"]
+            )
+        return None #R1710
 
     def solve(
         self,
