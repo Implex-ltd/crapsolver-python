@@ -4,7 +4,7 @@ this_directory = path.abspath(path.dirname(__file__))
 
 setup(
     name="crapsolver_python",
-    version="0.0.4",
+    version="0.0.5",
     packages=["crapsolver_python"],
     url="https://github.com/Implex-ltd/crapsolver-python",
     long_description="solve crap using crapsolver !",
