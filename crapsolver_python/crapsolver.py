@@ -59,6 +59,15 @@ class User:
     max_threads: int
     used_threads: int
 
+@dataclass
+class Captcha:
+    """
+    Returned by solve, contains info about the solved captcha.
+    """
+    token: str
+    user_agent: str
+    req: str
+
 def check_response(func):
     """
     Converts the Response object to a dictionary.
@@ -282,7 +291,11 @@ class Crapsolver:
                 continue
 
             if resp["data"]["status"] == STATUS.STATUS_SOLVED:
-                return resp["data"]["token"], resp["data"]["user_agent"]
+                return Captcha(
+                    token = resp["data"]["token"],
+                    user_agent = resp["data"]["user_agent"],
+                    req = resp["data"]["req"]
+                )
 
         return {
             "error": "max retry reached",
