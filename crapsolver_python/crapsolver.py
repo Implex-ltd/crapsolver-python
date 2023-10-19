@@ -1,94 +1,111 @@
-import time, httpx, itertools
+"""
+A python wrapper for crapsolver
+"""
+from functools import wraps
+from itertools import cycle
+from time import sleep
+from typing import Any, Dict, Optional, Tuple, Union
 
-__default_ua__ = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+from httpx import Client, Response
 
-__server__ = itertools.cycle(
-    #[
-    #    "http://localhost:80",
-    #    "http://localhost:82",
-    #]
+__server__ = cycle(
     [
-       "https://node01.nikolahellatrigger.solutions",
-       "https://node02.nikolahellatrigger.solutions",
-       "https://node03.nikolahellatrigger.solutions",
+        "https://node01.nikolahellatrigger.solutions",
+        "https://node02.nikolahellatrigger.solutions",
+        "https://node03.nikolahellatrigger.solutions",
     ]
 )
 
+DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
 
 class STATUS:
+    """
+    The status codes returned by /api/task endpoint
+    """
     STATUS_SOLVING = 0
     STATUS_SOLVED = 1
     STATUS_ERROR = 2
 
 
-class TASK_TYPE:
+class TaskType:
+    """
+    The Hcaptcha task type
+    """
     TYPE_ENTERPRISE = 0
-    # Disabled
-    TYPE_NORMAL = 1
+    TYPE_NORMAL = 1  # Disabled
 
 
-class Crapsolver:
-    def __init__(self, api: str):
-        self.client = httpx.Client(headers={"authorization": api})
+def check_response(func):
+    """
+    Converts the Response object to a dictionary
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        node = None
+        data: Response = func(*args, **kwargs)
 
-    def check_response(self, data: httpx.Response):
-        return {
+        if isinstance(data, tuple):
+            data, node = data
+
+        response_dict = {
             "status": data.status_code,
             "json": data.json(),
         }
+        if node:
+            return {"resp": response_dict, "node": node}
+        return response_dict
 
+    return wrapper
+
+class Crapsolver:
+    def __init__(self, api: str) -> None:
+        self.client = Client(headers={"authorization": api})
+
+    @check_response
     def new_task(
         self,
         domain: str,
         sitekey: str,
         proxy: str,
-        task_type: TASK_TYPE = TASK_TYPE.TYPE_ENTERPRISE,
-        useragent: str = __default_ua__,
-        invisible: bool = False,
-        rqdata: str = "",
-        text_free_entry: bool = False,
-        turbo: bool = False,
-        turbo_st: int = 3000,
-        hc_accessibility: str = "",
-        oneclick_only: bool = False,
-    ) -> [dict, str]:
+        task_type: Optional[TaskType] = TaskType.TYPE_ENTERPRISE,
+        useragent: Optional[str] = DEFAULT_UA,
+        invisible: Optional[bool] = False,
+        rqdata: Optional[str] = "",
+        text_free_entry: Optional[bool] = False,
+        turbo: Optional[bool] = False,
+        turbo_st: Optional[int] = 3000,
+        hc_accessibility: Optional[str] = "",
+        oneclick_only: Optional[bool] = False,
+    ) -> Dict[str, Union[int, dict]]:
         """
         Create a new task for solving a captcha.
 
         Args:
-            `task_type` (TASK_TYPE, optional): The type of captcha-solving task.\n
-            `domain` (str, required): The domain where the captcha is presented.\n
-            `sitekey` (str, required): The sitekey associated with the captcha..\n
-            `proxy` (str, required): The proxy to use for making requests.\n
-            `useragent` (str, optional): The user agent to use when making requests. Defaults to a common user agent string.\n
-            `invisible` (bool, optional): Whether the captcha is invisible. Defaults to False.\n
-            `rqdata` (str, optional): Additional request data. Defaults to an empty string.\n
-            `text_free_entry` (bool, optional): Whether free text entry is allowed. Defaults to False.\n
-            `turbo` (bool, optional): Whether turbo mode is enabled. Defaults to False.\n
-            `turbo_st` (int, optional): The turbo mode submit time in milliseconds. Defaults to 3000 (3s).\n
-            `hc_accessibility` (string, optional): hc_accessibility cookie, instant pass normal website.\n
-            `oneclick_only` (bool, optional): If captcha images spawn, task will be stopped and error returned.\n
+            `task_type` (TaskType, optional): The type of captcha-solving task.
+            `domain` (str, required): The domain where the captcha is presented.
+            `sitekey` (str, required): The sitekey associated with the captcha..
+            `proxy` (str, required): The proxy to use for making requests.
+            `useragent` (str, optional): User agent to solve with. Defaults to latest user agent.
+            `invisible` (bool, optional): Whether the captcha is invisible. Defaults to False.
+            `rqdata` (str, optional): Additional request data. Defaults to an empty string.
+            `text_free_entry` (bool, optional): Whether to allow free text entry. Defaults to False.
+            `turbo` (bool, optional): Whether turbo mode is enabled. Defaults to False.
+            `turbo_st` (int, optional): The turbo mode submit delay (ms). Defaults to 3000 (3s).
+            `hc_accessibility` (string, optional): accessibility cookie to use. Defaults to "".
+            `oneclick_only` (bool, optional): Whether to only allow insta-pass. Defaults to False.
 
-        Returns:\n
-            dict: A dictionary containing the task ID.
-            str:  task node server address
+        Returns:
+
+            Dict[str, Any]:  A dict containing status code and json data of response
         """
+        assert task_type == TaskType.TYPE_ENTERPRISE, "Only enterprise task allowed"
 
         if not proxy.startswith("http"):
-            return {
-                "success": False,
-                "data": "invalid proxy format, http://user:pass@ip:port",
-            }
-
-        if task_type != TASK_TYPE.TYPE_ENTERPRISE:
-            return {
-                "success": False,
-                "data": {"error": "only enterprise type is enabled"},
-            }
+            proxy = "http://" + proxy
 
         server = next(__server__)
 
-        response = self.check_response(
+        return (
             self.client.post(
                 f"{server}/api/task/new",
                 json={
@@ -96,7 +113,7 @@ class Crapsolver:
                     "site_key": sitekey,
                     "user_agent": useragent,
                     "proxy": proxy,
-                    "task_type": task_type,
+                    "TaskType": task_type,
                     "invisible": invisible,
                     "rqdata": rqdata,
                     "a11y_tfe": text_free_entry,
@@ -105,58 +122,43 @@ class Crapsolver:
                     "hc_accessibility": hc_accessibility,
                     "oneclick_only": oneclick_only,
                 },
-            )
+            ),
+            server,
         )
 
-        return {
-            "resp": response,
-            "node": server,
-        }
-
-    def get_task(self, server: str, task_id: str):
-        response = self.check_response(
-            self.client.get(
-                f"{server}/api/task/{task_id}",
-            )
+    @check_response
+    def get_task(self, server: str, task_id: str) -> Dict[str, Union[int, dict]]:
+        return self.client.get(
+            f"{server}/api/task/{task_id}",
         )
-
-        return response
 
     def solve(
         self,
         domain: str,
         sitekey: str,
         proxy: str,
-        max_retry: int = 5,
-        wait_time: int = 3000,
-        task_type: TASK_TYPE = TASK_TYPE.TYPE_ENTERPRISE,
-        useragent: str = __default_ua__,
-        invisible: bool = False,
-        rqdata: str = "",
-        text_free_entry: bool = False,
-        turbo: bool = False,
-        turbo_st: int = 3000,
-        hc_accessibility: str = "",
-        oneclick_only: bool = False,
-    ) -> dict:
-        if turbo == True:
+        max_retry: Optional[int] = 5,
+        wait_time: Optional[int] = 3000,
+        turbo_st: Optional[int] = 3000,
+        hc_accessibility: Optional[str] = "",
+        useragent: Optional[str] = DEFAULT_UA,
+        rqdata: Optional[str] = "",
+        text_free_entry: Optional[bool] = False,
+        oneclick_only: Optional[bool] = False,
+        invisible: Optional[bool] = False,
+        turbo: Optional[bool] = False,
+        task_type: Optional[TaskType] = TaskType.TYPE_ENTERPRISE,
+    ) -> Union[Dict[str, Any], Tuple[str, str]]:
+        if turbo:
             if turbo_st > 30000:
                 turbo_st = 30000
 
-            if turbo_st < 1000:
+            elif turbo_st < 1000:
                 turbo_st = 1000
 
-        i = 0
-        errs = []
-        while True:
-            if max_retry != 0 and i > max_retry:
-                return {
-                    "error": "max retry reached",
-                    "list": errs,
-                }
-
-            i += 1
-            data = self.new_task(
+        errors = []
+        for _ in range(max_retry):
+            data: Dict[str, Union[str, dict]] = self.new_task(
                 domain=domain,
                 sitekey=sitekey,
                 task_type=task_type,
@@ -170,35 +172,34 @@ class Crapsolver:
                 hc_accessibility=hc_accessibility,
                 oneclick_only=oneclick_only,
             )
-
-            if data.get("success") == False:
-                return response
-
             response = data["resp"]["json"]
-            node = data.get("node")
+            node = data["node"]
 
-            if response.get("success") == False or node == None:
-                return response
+            if not response.get("success") or response[0].get("success"):
+                continue
 
             if turbo:
-                time.sleep(turbo_st / 1000)
+                sleep(turbo_st / 1000)
             else:
-                time.sleep(7)
+                sleep(7)
 
-            while True:
+            resp = self.get_task(node, response["data"][0]["id"])["json"]
+            if not resp.get("success") or not resp["data"].get("success"):
+                errors.append(resp)
+                continue
+
+            while resp["data"]["status"] == STATUS.STATUS_SOLVING:
                 resp = self.get_task(node, response["data"][0]["id"])["json"]
+                sleep(wait_time / 1000)
 
-                if resp.get("success") == False:
-                    errs.append(resp)
-                    return resp
+            if resp["data"]["status"] == STATUS.STATUS_ERROR:
+                errors.append(resp["data"]["error"])
+                continue
 
-                if resp["data"]["status"] == STATUS.STATUS_ERROR:
-                    errs.append(resp["data"]["error"])
-                    time.sleep(wait_time / 1000)
-                    break
+            if resp["data"]["status"] == STATUS.STATUS_SOLVED:
+                return resp["data"]["token"], resp["data"]["user_agent"]
 
-                if resp["data"]["status"] == STATUS.STATUS_SOLVING:
-                    time.sleep(wait_time / 1000)
-
-                if resp["data"]["status"] == STATUS.STATUS_SOLVED:
-                    return resp["data"]["token"], resp["data"]["user_agent"]
+        return {
+            "error": "max retry reached",
+            "list": errors,
+        }
