@@ -1,5 +1,5 @@
 """
-A python wrapper for crapsolver
+A python wrapper for crapsolver.
 """
 from functools import wraps
 from itertools import cycle
@@ -21,7 +21,7 @@ DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 class STATUS:
     """
-    The status codes returned by /api/task endpoint
+    The status codes returned by /api/task endpoint.
     """
     STATUS_SOLVING = 0
     STATUS_SOLVED = 1
@@ -30,7 +30,7 @@ class STATUS:
 
 class TaskType:
     """
-    The Hcaptcha task type
+    The Hcaptcha task type.
     """
     TYPE_ENTERPRISE = 0
     TYPE_NORMAL = 1  # Disabled
@@ -38,7 +38,7 @@ class TaskType:
 @dataclass
 class Sitekey:
     """
-    Returned by check_sitekey, returns info about a specific sitekey
+    Returned by check_sitekey, returns info about a specific sitekey.
     """
     min_submit: int
     max_submit: int
@@ -48,9 +48,29 @@ class Sitekey:
     enabled: bool
     rate: int
 
+@dataclass
+class User:
+    """
+    Returned by get_user, returns info about a user.
+    """
+    balance: int
+    id: str
+    solved_hcaptcha: int
+    max_threads: int
+    used_threads: int
+
+@dataclass
+class Captcha:
+    """
+    Returned by solve, contains info about the solved captcha.
+    """
+    token: str
+    user_agent: str
+    req: str
+
 def check_response(func):
     """
-    Converts the Response object to a dictionary
+    Converts the Response object to a dictionary.
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -78,6 +98,10 @@ class Crapsolver:
                 "user-agent": "crapsolver-py"
             }
         )
+        
+    @property
+    def server(self) -> str:
+        return next(__server__)
 
     @check_response
     def new_task(
@@ -114,15 +138,14 @@ class Crapsolver:
 
         Returns:
 
-            Dict[str, Any]:  A dict containing status code and json data of response
+            Dict[str, Any]:  A dict containing status code and json data of response.
         """
         assert task_type == TaskType.TYPE_ENTERPRISE, "Only enterprise task allowed"
 
         if not proxy.startswith("http"):
             proxy = "http://" + proxy
 
-        server = next(__server__)
-
+        server = self.server
         return (
             self.client.post(
                 f"{server}/api/task/new",
@@ -152,7 +175,7 @@ class Crapsolver:
 
     def check_sitekey(self, sitekey: str) -> Union[Sitekey, None]:
         """
-        Get information about a sitekey
+        Get information about a sitekey.
 
         Args:
             sitekey (str): The sitekey to check.
@@ -160,9 +183,8 @@ class Crapsolver:
         Returns:
             Union[Sitekey, None]: Sitekey class containing info about the sitekey.
         """
-        server = next(__server__)
         response = self.client.get(
-            f"{server}/api/misc/check/{sitekey}"
+            f"{self.server}/api/misc/check/{sitekey}"
         )
         jsn = response.json()
         if jsn.get("success"):
@@ -176,6 +198,32 @@ class Crapsolver:
                 enabled = jsn["Enabled"],
                 rate = jsn["Rate"]
             )
+        return None #R1710
+
+    def get_user(self, user_id: str) -> Union[User, None]:
+        """
+        Get info regarding a user.
+
+        Args:
+            user_id (str): The user_id (example user:123456).
+
+        Returns:
+            Union[User, None]: User object containing the info or None if request fails.
+        """
+        response = self.client.get(
+            f"{self.server}/api/user/{user_id}"
+        )
+        jsn = response.json()
+        if jsn.get("success"):
+            jsn = jsn["data"]
+            return User(
+                balance = jsn["balance"],
+                id = jsn["id"],
+                solved_hcaptcha = jsn["solved_hcaptcha"],
+                max_threads = jsn["thread_max_hcaptcha"],
+                used_threads = jsn["thread_used_hcaptcha"]
+            )
+
         return None #R1710
 
     def solve(
@@ -243,7 +291,11 @@ class Crapsolver:
                 continue
 
             if resp["data"]["status"] == STATUS.STATUS_SOLVED:
-                return resp["data"]["token"], resp["data"]["user_agent"]
+                return Captcha(
+                    token = resp["data"]["token"],
+                    user_agent = resp["data"]["user_agent"],
+                    req = resp["data"]["req"]
+                )
 
         return {
             "error": "max retry reached",
