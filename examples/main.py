@@ -26,4 +26,4 @@ if __name__ == "__main__":
 
             print(captcha.token[:32], captcha.user_agent, captcha.req[:32], sep=" | ")
 
-# python -m pip install crapsolver-python==0.0.4
+# python -m pip install crapsolver-python==0.0.5
