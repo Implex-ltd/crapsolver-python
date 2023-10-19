@@ -3,7 +3,7 @@
 Python wrapper of crapsolver API
 
 ```
-python -m pip install crapsolver-python==0.0.4
+python -m pip install crapsolver-python==0.0.5
 ```
 
 # Usage
