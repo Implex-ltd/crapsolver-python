@@ -19,10 +19,12 @@ __server__ = cycle(
 
 DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
 
+
 class STATUS:
     """
     The status codes returned by /api/task endpoint.
     """
+
     STATUS_SOLVING = 0
     STATUS_SOLVED = 1
     STATUS_ERROR = 2
@@ -32,14 +34,17 @@ class TaskType:
     """
     The Hcaptcha task type.
     """
+
     TYPE_ENTERPRISE = 0
     TYPE_NORMAL = 1  # Disabled
+
 
 @dataclass
 class Sitekey:
     """
     Returned by check_sitekey, returns info about a specific sitekey.
     """
+
     min_submit: int
     max_submit: int
     domain: str
@@ -48,30 +53,37 @@ class Sitekey:
     enabled: bool
     rate: int
 
+
 @dataclass
 class User:
     """
     Returned by get_user, returns info about a user.
     """
+
     balance: int
     id: str
     solved_hcaptcha: int
     max_threads: int
     used_threads: int
+    bypass_restricted_sites: bool
+
 
 @dataclass
 class Captcha:
     """
     Returned by solve, contains info about the solved captcha.
     """
+
     token: str
     user_agent: str
     req: str
+
 
 def check_response(func):
     """
     Converts the Response object to a dictionary.
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         node = None
@@ -90,15 +102,13 @@ def check_response(func):
 
     return wrapper
 
+
 class Crapsolver:
     def __init__(self, api: str) -> None:
         self.client = Client(
-            headers = {
-                "authorization": api,
-                "user-agent": "crapsolver-py"
-            }
+            headers={"authorization": api, "user-agent": "crapsolver-py"}
         )
-        
+
     @property
     def server(self) -> str:
         return next(__server__)
@@ -183,22 +193,20 @@ class Crapsolver:
         Returns:
             Union[Sitekey, None]: Sitekey class containing info about the sitekey.
         """
-        response = self.client.get(
-            f"{self.server}/api/misc/check/{sitekey}"
-        )
+        response = self.client.get(f"{self.server}/api/misc/check/{sitekey}")
         jsn = response.json()
         if jsn.get("success"):
             jsn = jsn["data"]
             return Sitekey(
-                min_submit = jsn["MinSubmitTime"],
-                max_submit = jsn["MaxSubmitTime"],
-                domain = jsn["Domain"],
-                text_only = jsn["AlwaysText"],
-                click_only = jsn["OneclickOnly"],
-                enabled = jsn["Enabled"],
-                rate = jsn["Rate"]
+                min_submit=jsn["MinSubmitTime"],
+                max_submit=jsn["MaxSubmitTime"],
+                domain=jsn["Domain"],
+                text_only=jsn["AlwaysText"],
+                click_only=jsn["OneclickOnly"],
+                enabled=jsn["Enabled"],
+                rate=jsn["Rate"],
             )
-        return None #R1710
+        return None  # R1710
 
     def get_user(self, user_id: str) -> Union[User, None]:
         """
@@ -210,30 +218,29 @@ class Crapsolver:
         Returns:
             Union[User, None]: User object containing the info or None if request fails.
         """
-        response = self.client.get(
-            f"{self.server}/api/user/{user_id}"
-        )
+        response = self.client.get(f"{self.server}/api/user/{user_id}")
         jsn = response.json()
         if jsn.get("success"):
             jsn = jsn["data"]
             return User(
-                balance = jsn["balance"],
-                id = jsn["id"],
-                solved_hcaptcha = jsn["solved_hcaptcha"],
-                max_threads = jsn["thread_max_hcaptcha"],
-                used_threads = jsn["thread_used_hcaptcha"]
+                balance=jsn["balance"],
+                id=jsn["id"],
+                solved_hcaptcha=jsn["solved_hcaptcha"],
+                max_threads=jsn["thread_max_hcaptcha"],
+                used_threads=jsn["thread_used_hcaptcha"],
+                bypass_restricted_sites=jsn["bypass_restricted_sites"],
             )
 
-        return None #R1710
+        return None  # R1710
 
     def solve(
         self,
         domain: str,
         sitekey: str,
         proxy: str,
-        max_retry: Optional[int] = 5,
+        max_retry: Optional[int] = 100,
         wait_time: Optional[int] = 3000,
-        turbo_st: Optional[int] = 3000,
+        turbo_st: Optional[int] = 3500,
         hc_accessibility: Optional[str] = "",
         useragent: Optional[str] = DEFAULT_UA,
         rqdata: Optional[str] = "",
@@ -269,7 +276,7 @@ class Crapsolver:
             response = data["resp"]["json"]
             node = data["node"]
 
-            if not response.get("success") or response[0].get("success"):
+            if not response.get("success") or response["data"][0].get("success"):
                 continue
 
             if turbo:
@@ -278,7 +285,7 @@ class Crapsolver:
                 sleep(7)
 
             resp = self.get_task(node, response["data"][0]["id"])["json"]
-            if not resp.get("success") or not resp["data"].get("success"):
+            if not resp.get("success"):
                 errors.append(resp)
                 continue
 
@@ -292,9 +299,9 @@ class Crapsolver:
 
             if resp["data"]["status"] == STATUS.STATUS_SOLVED:
                 return Captcha(
-                    token = resp["data"]["token"],
-                    user_agent = resp["data"]["user_agent"],
-                    req = resp["data"]["req"]
+                    token=resp["data"]["token"],
+                    user_agent=resp["data"]["user_agent"],
+                    req=resp["data"]["req"],
                 )
 
         return {
