@@ -268,8 +268,8 @@ class Crapsolver:
             )
             response = data["resp"]["json"]
             node = data["node"]
-
-            if not response.get("success") or response[0].get("success"):
+            
+            if not response.get("success") or response['data'][0].get("success"):
                 continue
 
             if turbo:
@@ -278,7 +278,7 @@ class Crapsolver:
                 sleep(7)
 
             resp = self.get_task(node, response["data"][0]["id"])["json"]
-            if not resp.get("success") or not resp["data"].get("success"):
+            if not resp.get("success"):
                 errors.append(resp)
                 continue
 
