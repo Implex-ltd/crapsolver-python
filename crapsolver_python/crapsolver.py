@@ -134,22 +134,23 @@ class Crapsolver:
         Create a new task for solving a captcha.
 
         Args:
-            `task_type` (TaskType, optional): The type of captcha-solving task.
-            `domain` (str, required): The domain where the captcha is presented.
-            `sitekey` (str, required): The sitekey associated with the captcha..
-            `proxy` (str, required): The proxy to use for making requests.
-            `useragent` (str, optional): User agent to solve with. Defaults to latest user agent.
-            `invisible` (bool, optional): Whether the captcha is invisible. Defaults to False.
-            `rqdata` (str, optional): Additional request data. Defaults to an empty string.
-            `text_free_entry` (bool, optional): Whether to allow free text entry. Defaults to False.
-            `turbo` (bool, optional): Whether turbo mode is enabled. Defaults to False.
-            `turbo_st` (int, optional): The turbo mode submit delay (ms). Defaults to 3000 (3s).
-            `hc_accessibility` (string, optional): accessibility cookie to use. Defaults to "".
-            `oneclick_only` (bool, optional): Whether to only allow insta-pass. Defaults to False.
+            `task_type` (TaskType, optional): The type of captcha-solving task.\n
+            `domain` (str, required): The domain where the captcha is presented.\n
+            `sitekey` (str, required): The sitekey associated with the captcha.\n
+            `proxy` (str, required): The proxy to use for making requests.\n
+            `useragent` (str, optional): User agent to solve with. Defaults to latest user agent.\n
+            `invisible` (bool, optional): Whether the captcha is invisible. Defaults to False.\n
+            `rqdata` (str, optional): Additional request data. Defaults to an empty string.\n
+            `text_free_entry` (bool, optional): Whether to allow free text entry. Defaults to False.\n
+            `turbo` (bool, optional): Whether turbo mode is enabled. Defaults to False.\n
+            `turbo_st` (int, optional): The turbo mode submit delay (ms). Defaults to 3000 (3s).\n
+            `hc_accessibility` (string, optional): accessibility cookie to use. Defaults to "".\n
+            `oneclick_only` (bool, optional): Whether to only allow insta-pass. Defaults to False.\n
+            `href` (string, optional): href of the actual page where the captcha spawn, get it via motionData.Defaults to https://domain.\n\n
 
-        Returns:
+        Returns:\n
 
-            Dict[str, Any]:  A dict containing status code and json data of response.
+            `Dict[str, Any]`:  A dict containing status code and json data of response.
         """
         assert task_type == TaskType.TYPE_ENTERPRISE, "Only enterprise task allowed"
 
