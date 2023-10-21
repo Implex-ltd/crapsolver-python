@@ -128,6 +128,7 @@ class Crapsolver:
         turbo_st: Optional[int] = 3000,
         hc_accessibility: Optional[str] = "",
         oneclick_only: Optional[bool] = False,
+        href: Optional[str] = "",
     ) -> Dict[str, Union[int, dict]]:
         """
         Create a new task for solving a captcha.
@@ -172,6 +173,7 @@ class Crapsolver:
                     "turbo_st": turbo_st,
                     "hc_accessibility": hc_accessibility,
                     "oneclick_only": oneclick_only,
+                    "href": href,
                 },
             ),
             server,
@@ -249,6 +251,7 @@ class Crapsolver:
         invisible: Optional[bool] = False,
         turbo: Optional[bool] = False,
         task_type: Optional[TaskType] = TaskType.TYPE_ENTERPRISE,
+        href: Optional[str] = "",
     ) -> Union[Dict[str, Any], Tuple[str, str]]:
         if turbo:
             if turbo_st > 30000:
@@ -272,6 +275,7 @@ class Crapsolver:
                 turbo_st=turbo_st,
                 hc_accessibility=hc_accessibility,
                 oneclick_only=oneclick_only,
+                href=href,
             )
             response = data["resp"]["json"]
             node = data["node"]
