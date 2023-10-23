@@ -1,11 +1,11 @@
 """
 A python wrapper for crapsolver.
 """
+from dataclasses import dataclass
 from functools import wraps
 from itertools import cycle
 from time import sleep
 from typing import Any, Dict, Optional, Tuple, Union
-from dataclasses import dataclass
 
 from httpx import Client, Response
 
@@ -61,7 +61,8 @@ class User:
     """
 
     balance: int
-    id: str
+    balance_dollars: int
+    user_id: str
     solved_hcaptcha: int
     max_threads: int
     used_threads: int
@@ -108,6 +109,7 @@ class Crapsolver:
         self.client = Client(
             headers={"authorization": api, "user-agent": "crapsolver-py"}
         )
+        self.user_id = api
 
     @property
     def server(self) -> str:
@@ -136,23 +138,23 @@ class Crapsolver:
         Create a new task for solving a captcha.
 
         Args:
-            `task_type` (TaskType, optional): The type of captcha-solving task.\n
-            `domain` (str, required): The domain where the captcha is presented.\n
-            `sitekey` (str, required): The sitekey associated with the captcha.\n
-            `proxy` (str, required): The proxy to use for making requests.\n
-            `useragent` (str, optional): User agent to solve with. Defaults to latest user agent.\n
-            `invisible` (bool, optional): Whether the captcha is invisible. Defaults to False.\n
-            `rqdata` (str, optional): Additional request data. Defaults to an empty string.\n
-            `text_free_entry` (bool, optional): Whether to allow free text entry. Defaults to False.\n
-            `turbo` (bool, optional): Whether turbo mode is enabled. Defaults to False.\n
-            `turbo_st` (int, optional): The turbo mode submit delay (ms). Defaults to 3000 (3s).\n
-            `hc_accessibility` (string, optional): accessibility cookie to use. Defaults to "".\n
-            `oneclick_only` (bool, optional): Whether to only allow insta-pass. Defaults to False.\n
-            `href` (string, optional): href of the actual page where the captcha spawn, get it via motionData.Defaults to https://domain.\n\n
-            `exec` (bool, optional): Exec you can gather via motionData.\n
-            `dr` (string, optional): URL you can gather via motionData.\n
+            `task_type` (TaskType, optional): The type of captcha-solving task.
+            `domain` (str, required): The domain where the captcha is presented.
+            `sitekey` (str, required): The sitekey associated with the captcha.
+            `proxy` (str, required): The proxy to use for making requests.
+            `useragent` (str, optional): User agent to solve with. Default: latest user agent.
+            `invisible` (bool, optional): Whether the captcha is invisible. Default: False.
+            `rqdata` (str, optional): Additional request data. Default: "".
+            `text_free_entry` (bool, optional): Whether to allow free text entry. Default: False.
+            `turbo` (bool, optional): Whether turbo mode is enabled. Default: False.
+            `turbo_st` (int, optional): The turbo mode submit delay (ms). Default: 3000 (3s).
+            `hc_accessibility` (string, optional): accessibility cookie to use. Default: "".
+            `oneclick_only` (bool, optional): Whether to only allow insta-pass. Default: False.
+            `href` (string, optional): href of the page with the captcha, contained in MotionData.
+            `exec` (bool, optional): Exec you can gather via motionData.
+            `dr` (string, optional): URL you can gather via motionData.
 
-        Returns:\n
+        Returns:
 
             `Dict[str, Any]`:  A dict containing status code and json data of response.
         """
@@ -217,27 +219,35 @@ class Crapsolver:
             )
         return None  # R1710
 
-    def get_user(self, user_id: str) -> Union[User, None]:
+    def get_user(self, user_id: Optional[str] = None) -> Union[User, None]:
         """
         Get info regarding a user.
 
         Args:
-            user_id (str): The user_id (example user:123456).
+            user_id (str): The user_id (example user:123456). Default: our user_id.
 
         Returns:
             Union[User, None]: User object containing the info or None if request fails.
         """
+        if not user_id:
+            user_id = self.user_id
+
         response = self.client.get(f"{self.server}/api/user/{user_id}")
         jsn = response.json()
-        if jsn.get("success"):
+
+        if jsn.get("success") and jsn.get("data"):
             jsn = jsn["data"]
+            balance = jsn["balance"]
+            balance_in_dollars = balance / 2000
+
             return User(
-                balance=jsn["balance"],
-                id=jsn["id"],
+                balance=balance,
+                balance_dollars=balance_in_dollars,
+                user_id=jsn["id"],
                 solved_hcaptcha=jsn["solved_hcaptcha"],
                 max_threads=jsn["thread_max_hcaptcha"],
                 used_threads=jsn["thread_used_hcaptcha"],
-                bypass_restricted_sites=jsn["bypass_restricted_sites"],
+                bypass_restricted_sites=jsn["settings"]["bypass_restricted_sites"],
             )
 
         return None  # R1710
@@ -291,18 +301,12 @@ class Crapsolver:
             response = data["resp"]["json"]
             node = data["node"]
 
-            if not response.get("success") or response["data"][0].get("success"):
-                continue
-
             if turbo:
                 sleep(turbo_st / 1000)
             else:
                 sleep(7)
 
             resp = self.get_task(node, response["data"][0]["id"])["json"]
-            if not resp.get("success"):
-                errors.append(resp)
-                continue
 
             while resp["data"]["status"] == STATUS.STATUS_SOLVING:
                 resp = self.get_task(node, response["data"][0]["id"])["json"]
