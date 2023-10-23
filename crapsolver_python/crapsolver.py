@@ -129,6 +129,8 @@ class Crapsolver:
         hc_accessibility: Optional[str] = "",
         oneclick_only: Optional[bool] = False,
         href: Optional[str] = "",
+        exec: Optional[bool] = False,
+        dr: Optional[str] = "",
     ) -> Dict[str, Union[int, dict]]:
         """
         Create a new task for solving a captcha.
@@ -147,6 +149,8 @@ class Crapsolver:
             `hc_accessibility` (string, optional): accessibility cookie to use. Defaults to "".\n
             `oneclick_only` (bool, optional): Whether to only allow insta-pass. Defaults to False.\n
             `href` (string, optional): href of the actual page where the captcha spawn, get it via motionData.Defaults to https://domain.\n\n
+            `exec` (bool, optional): Exec you can gather via motionData.\n
+            `dr` (string, optional): URL you can gather via motionData.\n
 
         Returns:\n
 
@@ -175,6 +179,8 @@ class Crapsolver:
                     "hc_accessibility": hc_accessibility,
                     "oneclick_only": oneclick_only,
                     "href": href,
+                    "exec": exec,
+                    "dr": dr,
                 },
             ),
             server,
@@ -253,6 +259,8 @@ class Crapsolver:
         turbo: Optional[bool] = False,
         task_type: Optional[TaskType] = TaskType.TYPE_ENTERPRISE,
         href: Optional[str] = "",
+        exec: Optional[bool] = False,
+        dr: Optional[str] = "",
     ) -> Union[Dict[str, Any], Tuple[str, str]]:
         if turbo:
             if turbo_st > 30000:
@@ -277,6 +285,8 @@ class Crapsolver:
                 hc_accessibility=hc_accessibility,
                 oneclick_only=oneclick_only,
                 href=href,
+                exec=exec,
+                dr=dr,
             )
             response = data["resp"]["json"]
             node = data["node"]
